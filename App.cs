@@ -83,8 +83,8 @@ namespace VkToDiscordReplication
                 
                 if (updateData != null && !string.IsNullOrEmpty(updateData.Ts) && bot.LongPollServer.Ts != updateData.Ts)
                 {
-                    bot.LongPollServer.Ts = updateData.Ts;
                     _logger.LogInformation("[{0}] TS updated, old - \"{1}\", new - \"{2}\"", config.GroupId, bot.LongPollServer.Ts, updateData.Ts);
+                    bot.LongPollServer.Ts = updateData.Ts;
                 }
 
                 if (updateData == null || updateData.Updates == null || updateData.Updates.Count == 0)
