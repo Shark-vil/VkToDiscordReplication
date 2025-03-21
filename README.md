@@ -4,11 +4,11 @@
 
 ### Пост в VK
 
-![VK](https://i.imgur.com/10sNlzb.png)
+![VK](https://i.imgur.com/10sNlzb.png|width=100)
 
 ### Репликация в Discord
 
-![Discord](https://i.imgur.com/Uxenbuf.png)
+![Discord](https://i.imgur.com/Uxenbuf.png|width=100)
 
 ## Для работы требуется NET 8
 
