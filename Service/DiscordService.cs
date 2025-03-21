@@ -26,7 +26,7 @@ namespace VkToDiscordReplication.Service
             text = TextHelper.VkTagsToDiscord(text);
 
             var embedBuilder = new DiscordEmbedBuilder(postUrl);
-            embedBuilder.SetContent("@everyone 📢 Новый пост в группе!");
+            embedBuilder.SetContent(bot.Config.AlertText);
             embedBuilder.AddText(text);
             if (update.Object.Attachments.Count != 0 && update.Object.Attachments.Any(x => Array.Exists(["photo", "audio", "doc", "poll"], val => val == x.Type)))
                 embedBuilder.AddText("\n\n**Вложения**");

@@ -58,6 +58,12 @@ namespace VkToDiscordReplication.Models.Config
         [JsonPropertyName("custom_avatar")]
         public string CustomAvatar { get; set; } = string.Empty;
 
+        /// <summary>
+        /// The text that the bot will write before the embed
+        /// </summary>
+        [JsonPropertyName("alert_text")]
+        public string AlertText { get; set; } = "@everyone 📢 Новый пост в группе!";
+
         [JsonIgnore]
         public string CustomNameDefault { get; private set; } = "VK to Discord";
 
