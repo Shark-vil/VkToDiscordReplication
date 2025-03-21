@@ -72,7 +72,7 @@ namespace VkToDiscordReplication
             {
                 if (bot.ServerUpdateRequired && !await UpdateLongPollServerAsync(bot))
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(30));
+                    _logger.LogWarning("[{0}] Failed to get LongPoll server", config.GroupId);
                     continue;
                 }
 
@@ -80,23 +80,31 @@ namespace VkToDiscordReplication
                     throw new NullReferenceException(nameof(bot.LongPollServer));
 
                 GetLongPollUpdateResponse? updateData = await CheckUpdatesAsync(bot);
-                if (updateData == null) continue;
+                
+                if (updateData != null && !string.IsNullOrEmpty(updateData.Ts) && bot.LongPollServer.Ts != updateData.Ts)
+                {
+                    bot.LongPollServer.Ts = updateData.Ts;
+                    _logger.LogInformation("[{0}] TS updated, old - \"{1}\", new - \"{2}\"", config.GroupId, bot.LongPollServer.Ts, updateData.Ts);
+                }
+
+                if (updateData == null || updateData.Updates == null || updateData.Updates.Count == 0)
+                {
+                    _logger.LogInformation("[{0}] There are no page updates.", config.GroupId);
+                    continue;
+                }
 
                 switch (updateData.Failed)
                 {
                     case 1:
                         bot.LongPollServer.Ts = updateData.Ts;
+                        _logger.LogWarning("[{0}] Outdated TS - ({1}), new - ({2}).", config.GroupId, bot.LongPollServer.Ts, updateData.Ts);
                         continue;
                     case 2:
                     case 3:
                         bot.ServerUpdateRequired = true;
+                        _logger.LogWarning("[{0}] The server session is out of date and needs to be refreshed.", config.GroupId);
                         continue;
-                    case 4:
-                        _logger.LogError("[{0}] Version error", config.GroupId);
-                        return;
                 }
-
-                bot.LongPollServer.Ts = updateData.Ts;
 
                 foreach (GetLongPollUpdateItem update in updateData.Updates)
                 {

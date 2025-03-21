@@ -79,9 +79,6 @@ namespace VkToDiscordReplication.Service
             if (responseObject == null)
                 throw new NullReferenceException(nameof(responseObject));
 
-            if (responseObject.Updates == null || responseObject.Updates.Count == 0)
-                return null;
-
             return responseObject;
         }
 
