@@ -101,7 +101,6 @@ namespace VkToDiscordReplication
                 foreach (GetLongPollUpdateItem update in updateData.Updates)
                 {
                     if (update.Object == null
-                    || Math.Abs(update.Object.FromId).ToString() != config.GroupId
                     || update.Type != "wall_post_new"
                     || (string.IsNullOrWhiteSpace(update.Object.Text) && update.Object.Attachments.Count == 0))
                         continue;
