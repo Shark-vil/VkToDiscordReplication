@@ -34,6 +34,8 @@ namespace VkToDiscordReplication.Service
                 embedBuilder.SetColor((int)bot.EmbedColor);
             embedBuilder.SetAuthor(bot.GroupName, bot.GroupAvatarUrl, postUrl);
 
+            var origImagesLinks = new List<string>();
+
             foreach (VkAttachment attachment in update.Object.Attachments)
             {
                 switch (attachment.Type)
@@ -41,25 +43,19 @@ namespace VkToDiscordReplication.Service
                     case "photo":
                         if (attachment.Photo != null && attachment.Photo.OrigPhoto != null && attachment.Photo.Sizes.Count != 0)
                         {
-                            //var photo = attachment.Photo.Sizes
-                            //    .Where(x => x.Type == "x")
-                            //    .FirstOrDefault();
-
-                            //if (photo == null)
-                            //{
-                            //    double avWidth = attachment.Photo.Sizes.Average(x => x.Width);
-                            //    double avHeight = attachment.Photo.Sizes.Average(x => x.Height);
-                            //    photo = attachment.Photo.Sizes
-                            //        .OrderBy(s => Math.Abs(s.Width - avWidth) + Math.Abs(s.Height - avHeight))
-                            //        .First();
-                            //}
-
-                            //if (photo == null)
-                            //    photo = attachment.Photo.OrigPhoto;
-
-                            VkAttachmentPhotoItem? photo = attachment.Photo.OrigPhoto;
+                            VkAttachmentPhotoItem? photo = null;
+                            double avWidth = attachment.Photo.Sizes.Average(x => x.Width);
+                            double avHeight = attachment.Photo.Sizes.Average(x => x.Height);
+                            photo = attachment.Photo.Sizes
+                                .OrderBy(s => Math.Abs(s.Width - avWidth) + Math.Abs(s.Height - avHeight))
+                                .FirstOrDefault() ?? attachment.Photo.Sizes
+                                    .Where(x => x.Type == "x")
+                                    .FirstOrDefault() ?? attachment.Photo.OrigPhoto;
                             if (photo != null)
+                            {
                                 embedBuilder.AddImage(photo.Url);
+                                origImagesLinks.Add(attachment.Photo.OrigPhoto.Url);
+                            }
                         };
                         break;
 
@@ -78,6 +74,21 @@ namespace VkToDiscordReplication.Service
                             embedBuilder.AddText($"\n- 📊 Опрос: [{attachment.Poll.Question}](https://vk.com/poll{update.Object.FromId}_{attachment.Poll.Id})");
                         break;
                 }
+            }
+
+            // Links to original photos
+            if (origImagesLinks.Count != 0)
+            {
+                string linksString = string.Empty;
+
+                for (int i = 0; i < origImagesLinks.Count; i++)
+                    linksString += $"[{i + 1}]({origImagesLinks[i]}), ";
+
+                linksString = linksString
+                    .Trim()
+                    .Substring(0, linksString.Length - 2);
+
+                embedBuilder.AddText($"\n- 🖼️ Изображения: {linksString}");
             }
 
             return embedBuilder.Build();
