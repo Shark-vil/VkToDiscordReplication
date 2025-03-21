@@ -89,7 +89,7 @@ namespace VkToDiscordReplication
 
                 if (updateData == null || updateData.Updates == null || updateData.Updates.Count == 0)
                 {
-                    _logger.LogInformation("[{0}] There are no page updates.", config.GroupId);
+                    _logger.LogDebug("[{0}] There are no page updates.", config.GroupId);
                     continue;
                 }
 
