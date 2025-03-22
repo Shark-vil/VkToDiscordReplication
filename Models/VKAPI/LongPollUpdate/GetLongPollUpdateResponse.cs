@@ -8,7 +8,7 @@ namespace VkToDiscordReplication.Models.VKAPI.LongPollUpdate
         public string Ts { get; set; } = string.Empty;
 
         [JsonPropertyName("failed")]
-        public short Failed { get; set; }
+        public short? Failed { get; set; }
 
         [JsonPropertyName("updates")]
         public List<GetLongPollUpdateItem> Updates { get; set; } = new();

@@ -108,7 +108,7 @@ namespace VkToDiscordReplication.Service
             }
             catch (Exception ex)
             {
-                _logger.LogError("[{0}] Error sending to Discord: {1}", bot.Config.GroupId, ex);
+                _logger.LogError("[{0}] Error sending to Discord: {1}", bot.IdFromLog, ex);
             }
 
             return false;

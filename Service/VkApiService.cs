@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using VkToDiscordReplication.Helpers;
 using VkToDiscordReplication.Models;
-using VkToDiscordReplication.Models.Config;
 using VkToDiscordReplication.Models.VKAPI.GetById;
 using VkToDiscordReplication.Models.VKAPI.LongPollServer;
 using VkToDiscordReplication.Models.VKAPI.LongPollUpdate;
@@ -20,7 +19,7 @@ namespace VkToDiscordReplication.Service
                     { "group_id", bot.Config.GroupId },
                     { "v", string.IsNullOrWhiteSpace(bot.Config.LongpollVersion) ? "5.150" : bot.Config.LongpollVersion },
                     { "lp_version", string.IsNullOrWhiteSpace(bot.Config.LpVersion) ? "3" : bot.Config.LpVersion },
-                    { "need_pts", string.IsNullOrWhiteSpace(bot.Config.NeedPts) ? "1" : bot.Config.NeedPts }
+                    { "need_pts", string.IsNullOrWhiteSpace(bot.Config.NeedPts) ? "0" : bot.Config.NeedPts }
                 }
             );
 
@@ -70,7 +69,6 @@ namespace VkToDiscordReplication.Service
             {
                 return null;
             }
-            //catch (TaskCanceledException ex) when (!ex.CancellationToken.IsCancellationRequested) { }
 
             if (string.IsNullOrEmpty(responseJson))
                 throw new NullReferenceException(nameof(responseJson));

@@ -17,6 +17,16 @@ namespace VkToDiscordReplication.Models
 
         internal AppConfigDataItem Config { get; set; }
 
+        internal string IdFromLog
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(GroupName))
+                    return Config.GroupId.ToString();
+                return GroupName;
+            }
+        }
+
         public BotProfile(AppConfigDataItem config)
         {
             Config = config;

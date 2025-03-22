@@ -1,17 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Web;
 using VkToDiscordReplication.Helpers;
 using VkToDiscordReplication.Models;
 using VkToDiscordReplication.Models.Config;
 using VkToDiscordReplication.Models.Discord;
-using VkToDiscordReplication.Models.VKAPI.Attachments;
 using VkToDiscordReplication.Models.VKAPI.GetById;
 using VkToDiscordReplication.Models.VKAPI.LongPollUpdate;
-using VkToDiscordReplication.Module;
 using VkToDiscordReplication.Service;
 
 namespace VkToDiscordReplication
@@ -64,15 +57,15 @@ namespace VkToDiscordReplication
                 return;
             }
 
-            _logger.LogInformation("Starting a group bot - {0}", config.GroupId);
-
             await InitBotInfoAsync(bot);
+
+            _logger.LogInformation("Starting a group bot - {0}", bot.IdFromLog);
 
             while (true)
             {
                 if (bot.ServerUpdateRequired && !await UpdateLongPollServerAsync(bot))
                 {
-                    _logger.LogWarning("[{0}] Failed to get LongPoll server", config.GroupId);
+                    _logger.LogWarning("[{0}] Failed to get LongPoll server", bot.IdFromLog);
                     continue;
                 }
 
@@ -80,31 +73,32 @@ namespace VkToDiscordReplication
                     throw new NullReferenceException(nameof(bot.LongPollServer));
 
                 GetLongPollUpdateResponse? updateData = await CheckUpdatesAsync(bot);
-                
-                if (updateData != null && !string.IsNullOrEmpty(updateData.Ts) && bot.LongPollServer.Ts != updateData.Ts)
+                if (updateData != null)
                 {
-                    _logger.LogInformation("[{0}] TS updated, old - \"{1}\", new - \"{2}\"", config.GroupId, bot.LongPollServer.Ts, updateData.Ts);
-                    bot.LongPollServer.Ts = updateData.Ts;
+                    if (!string.IsNullOrEmpty(updateData.Ts) && bot.LongPollServer.Ts != updateData.Ts)
+                    {
+                        _logger.LogInformation("[{0}] TS updated, old - \"{1}\", new - \"{2}\"", bot.IdFromLog, bot.LongPollServer.Ts, updateData.Ts);
+                        bot.LongPollServer.Ts = updateData.Ts;
+                    }
+
+                    switch (updateData.Failed)
+                    {
+                        case 1:
+                            _logger.LogWarning("[{0}] If the event history is out of date or partially lost, the application can retrieve events further using the new ts value from the response.", bot.IdFromLog);
+                            continue;
+                        case 2:
+                        case 3:
+                            bot.ServerUpdateRequired = true;
+                            _logger.LogWarning("[{0}] The server session is out of date and needs to be refreshed.", bot.IdFromLog);
+                            continue;
+                        case 4:
+                            _logger.LogError($"[{{0}}] An invalid version number was passed in the version parameter.", bot.IdFromLog);
+                            return;
+                    }
                 }
 
                 if (updateData == null || updateData.Updates == null || updateData.Updates.Count == 0)
-                {
-                    _logger.LogDebug("[{0}] There are no page updates.", config.GroupId);
                     continue;
-                }
-
-                switch (updateData.Failed)
-                {
-                    case 1:
-                        bot.LongPollServer.Ts = updateData.Ts;
-                        _logger.LogWarning("[{0}] Outdated TS - ({1}), new - ({2}).", config.GroupId, bot.LongPollServer.Ts, updateData.Ts);
-                        continue;
-                    case 2:
-                    case 3:
-                        bot.ServerUpdateRequired = true;
-                        _logger.LogWarning("[{0}] The server session is out of date and needs to be refreshed.", config.GroupId);
-                        continue;
-                }
 
                 foreach (GetLongPollUpdateItem update in updateData.Updates)
                 {
@@ -115,7 +109,7 @@ namespace VkToDiscordReplication
 
                     DiscordEmbed embed = DiscordService.MakeEmbeded(bot, update);
                     if (await DiscordService.SendWebhookAsync(bot, embed) && embed.Embeds != null && embed.Embeds.Count != 0)
-                        _logger.LogInformation("[{0}] Successful replication of post - {1}", config.GroupId, embed.Embeds[0].Url);
+                        _logger.LogInformation("[{0}] Successful replication of post - {1}", bot.IdFromLog, embed.Embeds[0].Url);
                 }
             }
         }
@@ -129,18 +123,18 @@ namespace VkToDiscordReplication
                 try
                 {
                     GetByIdGroupItem? groupInfo = await VkApiService.GetByIdAsync(bot);
-                    if (groupInfo != null && groupInfo.Photo100 != null && groupInfo.Name != null)
+                    if (groupInfo != null && groupInfo.Photo50 != null && groupInfo.Name != null)
                     {
                         if (string.IsNullOrWhiteSpace(config.CustomName))
                             bot.GroupName = groupInfo.Name;
 
                         if (string.IsNullOrWhiteSpace(config.CustomAvatar))
-                            bot.GroupAvatarUrl = groupInfo.Photo100;
+                            bot.GroupAvatarUrl = groupInfo.Photo50;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("[{0}] Error retrieving group data: {1}", config.GroupId, ex);
+                    _logger.LogError("[{0}] Error retrieving group data: {1}", bot.IdFromLog, ex);
                 }
             }
 
@@ -157,11 +151,12 @@ namespace VkToDiscordReplication
             {
                 bot.LongPollServer = await VkApiService.GetLongPollServerAsync(bot);
                 bot.ServerUpdateRequired = false;
+                _logger.LogInformation("[{0}] Found new LongPoll server - {1}", bot.IdFromLog, bot.LongPollServer.Server);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError("[{0}] Error getting LongPoll server: {1}", bot.Config.GroupId, ex);
+                _logger.LogError("[{0}] Error getting LongPoll server: {1}", bot.IdFromLog, ex);
                 return false;
             }
         }
@@ -177,7 +172,7 @@ namespace VkToDiscordReplication
             }
             catch (Exception ex)
             {
-                _logger.LogError("[{0}] Error receiving updates: {1}", bot.Config.GroupId, ex);
+                _logger.LogError("[{0}] Error receiving updates: {1}", bot.IdFromLog, ex);
             }
 
             return null;
