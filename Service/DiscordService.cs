@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using VkToDiscordReplication.Helpers;
@@ -66,7 +67,11 @@ namespace VkToDiscordReplication.Service
 
                     case "doc":
                         if (attachment.Document != null)
+                        {
                             embedBuilder.AddText($"\n- 📄 Документ: [{attachment.Document.Title}]({attachment.Document.Url})");
+                            if (origImagesLinks.Count < 10 && Array.Exists(["png", "jpg", "jpeg", "gif", "webp", "webm"], x => x == attachment.Document.Ext))
+                                embedBuilder.AddImage(attachment.Document.Url);
+                        }
                         break;
 
                     case "poll":
@@ -105,6 +110,18 @@ namespace VkToDiscordReplication.Service
                 );
 
                 return true;
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError("[{0}] Request error sending to Discord: {1}", bot.IdFromLog, ex);
+
+                switch (ex.StatusCode)
+                {
+                    case HttpStatusCode.BadRequest:
+                        return true;
+                }
+
+                return false;
             }
             catch (Exception ex)
             {

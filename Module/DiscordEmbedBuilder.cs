@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VkToDiscordReplication.Models;
-using VkToDiscordReplication.Models.Discord;
+﻿using VkToDiscordReplication.Models.Discord;
 
 namespace VkToDiscordReplication.Module
 {
@@ -73,6 +67,21 @@ namespace VkToDiscordReplication.Module
                 }
             });
         }
+
+        //public void AddVideo(string videoUrl)
+        //{
+        //    if (_embed.Embeds == null)
+        //        throw new NullReferenceException(nameof(_embed.Embeds));
+
+        //    _embed.Embeds.Add(new DiscordEmbedItem
+        //    {
+        //        Url = _embedUrl,
+        //        Video = new DiscordEmbedVideo
+        //        {
+        //            Url = videoUrl
+        //        }
+        //    });
+        //}
 
         public DiscordEmbed Build() => _embed;
     }

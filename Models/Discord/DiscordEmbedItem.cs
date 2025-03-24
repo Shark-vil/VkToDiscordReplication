@@ -22,6 +22,9 @@ namespace VkToDiscordReplication.Models.Discord
         [JsonPropertyName("image")]
         public DiscordEmbedImage? Image { get; set; }
 
+        //[JsonPropertyName("video")]
+        //public DiscordEmbedVideo? Video { get; set; }
+
         //[JsonPropertyName("fields")]
         //public List<DiscordEmbedItemField> Fields { get; set; } = new();
     }
