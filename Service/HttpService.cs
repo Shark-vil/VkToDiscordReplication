@@ -2,6 +2,8 @@
 {
     internal static class HttpService
     {
+        private static TimeSpan _defaultTimeOut { get { return TimeSpan.FromSeconds(60); } }
+
         private static HttpClient _httpClient
         {
             get
@@ -11,7 +13,7 @@
                     _httpClientValue = new HttpClient();
                     _httpClientValue.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
                     _httpClientValue.DefaultRequestHeaders.Add("Connection", "keep-alive");
-                    _httpClientValue.Timeout = TimeSpan.FromSeconds(100);
+                    _httpClientValue.Timeout = _defaultTimeOut;
                 }
                 return _httpClientValue;
             }
@@ -28,7 +30,7 @@
             };
 
             using (request)
-            using (CancellationTokenSource cts = new CancellationTokenSource(requestTimeout ?? TimeSpan.FromSeconds(10)))
+            using (CancellationTokenSource cts = new CancellationTokenSource(requestTimeout ?? _defaultTimeOut))
             using (HttpResponseMessage response = await _httpClient.SendAsync(request, cts.Token))
             {
                 response.EnsureSuccessStatusCode();
@@ -39,7 +41,7 @@
         internal static async Task<string> GetAsync(string url, TimeSpan? requestTimeout = null)
         {
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
-            using (CancellationTokenSource cts = new CancellationTokenSource(requestTimeout ?? TimeSpan.FromSeconds(10)))
+            using (CancellationTokenSource cts = new CancellationTokenSource(requestTimeout ?? _defaultTimeOut))
             using (HttpResponseMessage response = await _httpClient.SendAsync(request, cts.Token))
             {
                 response.EnsureSuccessStatusCode();
@@ -47,11 +49,27 @@
             }
         }
 
+        internal static async Task<bool> DownloadFileAsync(string url, string filePath)
+        {
+            try
+            {
+                using (Stream s = await _httpClient.GetStreamAsync(url))
+                using (var fs = new FileStream(filePath, FileMode.CreateNew))
+                    await s.CopyToAsync(fs);
+
+                return File.Exists(filePath);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         internal static async Task<bool> CheckSuccessAsync(string url, TimeSpan? requestTimeout = null)
         {
             try
             {
-                using var cts = new CancellationTokenSource(requestTimeout ?? TimeSpan.FromSeconds(10));
+                using var cts = new CancellationTokenSource(requestTimeout ?? _defaultTimeOut);
                 using var response = await _httpClient.GetAsync(url, cts.Token);
                 return response.IsSuccessStatusCode;
             }

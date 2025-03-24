@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
 using VkToDiscordReplication.Helpers;
 using VkToDiscordReplication.Models;
 using VkToDiscordReplication.Models.Config;
@@ -21,6 +22,30 @@ namespace VkToDiscordReplication
 
         internal async Task RunAsync()
         {
+            string? ytDlpUrl = null;
+            string? ytDlpPath = null;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                ytDlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux";
+                ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt_dlp_linux");
+            }
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                ytDlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_x86.exe";
+                ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt_dlp_win.exe");
+            }
+
+            if (!string.IsNullOrEmpty(ytDlpUrl) && !string.IsNullOrEmpty(ytDlpPath) && !File.Exists(ytDlpPath))
+                if (await HttpService.DownloadFileAsync(ytDlpUrl, ytDlpPath))
+                {
+                    _logger.LogInformation("The file \"{0}\" was downloaded to directory: \"{1}\".", ytDlpUrl, ytDlpPath);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        _logger.LogWarning("Please grant execute permissions! Run command in the app directory:\r\nchmod +x {0}\r\nOR\r\nchmod +x {1}", "yt_dlp_linux", ytDlpPath);
+                }
+                else
+                    _logger.LogError("Failed to load file \"{0}\" from path \"{1}\"", ytDlpUrl, ytDlpPath);
+
             AppConfigData configGroups;
             try
             {
@@ -108,8 +133,18 @@ namespace VkToDiscordReplication
                         continue;
 
                     DiscordEmbed embed = DiscordService.MakeEmbeded(bot, update);
-                    if (await DiscordService.SendWebhookAsync(bot, embed) && embed.Embeds != null && embed.Embeds.Count != 0)
-                        _logger.LogInformation("[{0}] Successful replication of post - {1}", bot.IdFromLog, embed.Embeds[0].Url);
+                    int repeat = 0;
+                    const int maxRepeat = 3;
+
+                    while (repeat < maxRepeat)
+                    {
+                        if (await DiscordService.SendWebhookAsync(bot, embed) && embed.Embeds != null && embed.Embeds.Count != 0)
+                        {
+                            _logger.LogInformation("[{0}] Successful replication of post - {1}", bot.IdFromLog, embed.Embeds[0].Url);
+                            break;
+                        }
+                        repeat++;
+                    }
                 }
             }
         }

@@ -101,7 +101,7 @@ namespace VkToDiscordReplication.Service
                 await HttpService.PostAsync(
                     bot.Config.DiscordWebhook,
                     new StringContent(JsonSerializer.Serialize(embed), Encoding.UTF8, "application/json"),
-                    TimeSpan.FromSeconds(10)
+                    TimeSpan.FromSeconds(30)
                 );
 
                 return true;
