@@ -22,29 +22,9 @@ namespace VkToDiscordReplication
 
         internal async Task RunAsync()
         {
-            string? ytDlpUrl = null;
-            string? ytDlpPath = null;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                ytDlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux";
-                ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt_dlp_linux");
-            }
-            else if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                ytDlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_x86.exe";
-                ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt_dlp_win.exe");
-            }
-
-            if (!string.IsNullOrEmpty(ytDlpUrl) && !string.IsNullOrEmpty(ytDlpPath) && !File.Exists(ytDlpPath))
-                if (await HttpService.DownloadFileAsync(ytDlpUrl, ytDlpPath))
-                {
-                    _logger.LogInformation("The file \"{0}\" was downloaded to directory: \"{1}\".", ytDlpUrl, ytDlpPath);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                        _logger.LogWarning("Please grant execute permissions! Run command in the app directory:\r\nchmod +x {0}\r\nOR\r\nchmod +x {1}", "yt_dlp_linux", ytDlpPath);
-                }
-                else
-                    _logger.LogError("Failed to load file \"{0}\" from path \"{1}\"", ytDlpUrl, ytDlpPath);
+#if DEBUG
+            await DownloadYtDlpAsync();
+#endif
 
             AppConfigData configGroups;
             try
@@ -148,6 +128,35 @@ namespace VkToDiscordReplication
                 }
             }
         }
+
+#if DEBUG
+        private async Task DownloadYtDlpAsync()
+        {
+            string? ytDlpUrl = null;
+            string? ytDlpPath = null;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                ytDlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux";
+                ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt_dlp_linux");
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                ytDlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_x86.exe";
+                ytDlpPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "yt_dlp_win.exe");
+            }
+
+            if (!string.IsNullOrEmpty(ytDlpUrl) && !string.IsNullOrEmpty(ytDlpPath) && !File.Exists(ytDlpPath))
+                if (await HttpService.DownloadFileAsync(ytDlpUrl, ytDlpPath))
+                {
+                    _logger.LogInformation("The file \"{0}\" was downloaded to directory: \"{1}\".", ytDlpUrl, ytDlpPath);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        _logger.LogWarning("Please grant execute permissions! Run command in the app directory:\r\nchmod +x {0}\r\nOR\r\nchmod +x {1}", "yt_dlp_linux", ytDlpPath);
+                }
+                else
+                    _logger.LogError("Failed to load file \"{0}\" from path \"{1}\"", ytDlpUrl, ytDlpPath);
+        }
+#endif
 
         private async Task InitBotInfoAsync(BotProfile bot)
         {
